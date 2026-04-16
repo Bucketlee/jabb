@@ -3,6 +3,7 @@ node_modules/
 .vercel/
 dist/
 .wrangler/
+*.tsbuildinfo
 .env
 .env.local
 .env.*.local
