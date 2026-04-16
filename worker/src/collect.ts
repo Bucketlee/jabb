@@ -17,6 +17,7 @@ function sanitizeReferrer(raw: string | undefined | null): string | null {
   if (!raw) return null;
   try {
     const u = new URL(raw);
+    if (u.protocol !== 'http:' && u.protocol !== 'https:') return null;
     const normalized = `${u.protocol}//${u.host}${u.pathname}`;
     return normalized.slice(0, MAX_REFERRER_LEN);
   } catch {
