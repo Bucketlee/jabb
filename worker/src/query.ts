@@ -65,7 +65,7 @@ async function handleOverview(db: D1Database, project: string, from: string, to:
 
     db
       .prepare(
-        `SELECT referrer, COUNT(*) as views FROM events WHERE project = ? AND type = 'pageview' AND referrer IS NOT NULL AND day >= ? AND day <= ? GROUP BY referrer ORDER BY views DESC LIMIT 10`
+        `SELECT referrer, COUNT(DISTINCT visitor) as views FROM events WHERE project = ? AND type = 'pageview' AND referrer IS NOT NULL AND day >= ? AND day <= ? GROUP BY referrer ORDER BY views DESC LIMIT 10`
       )
       .bind(project, from, to)
       .all<{ referrer: string; views: number }>(),

@@ -14,7 +14,7 @@ function buildScript(workerUrl: string): string {
     try{
       var payload={p:project,u:location.pathname,t:type};
       var ref=document.referrer;
-      if(ref)payload.r=ref;
+      if(ref){try{var refHost=new URL(ref).host;if(refHost&&refHost!==location.host)payload.r=ref;}catch(e){}}
       if(name)payload.n=name;
       if(meta)payload.m=meta;
       var body=JSON.stringify(payload);

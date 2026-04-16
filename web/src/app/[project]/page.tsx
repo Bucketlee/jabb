@@ -22,24 +22,13 @@ function extractDomain(url: string): string {
   }
 }
 
-function filterReferrers(
+function formatReferrers(
   referrers: { referrer: string; views: number }[],
-  project: string,
 ): { label: string; value: number }[] {
-  return referrers
-    .map((r) => {
-      const domain = r.referrer ? extractDomain(r.referrer) : '';
-      return { raw: r.referrer, domain, value: r.views };
-    })
-    .filter(({ domain }) => {
-      if (!domain) return true;
-      // 자기 사이트 리퍼러 제외: 도메인에 project slug가 포함된 경우
-      return !domain.toLowerCase().includes(project.toLowerCase());
-    })
-    .map(({ domain, value }) => ({
-      label: domain || '(direct)',
-      value,
-    }));
+  return referrers.map((r) => ({
+    label: r.referrer ? extractDomain(r.referrer) : '(direct)',
+    value: r.views,
+  }));
 }
 
 function StatCard({ label, value }: { label: string; value: number }) {
@@ -160,7 +149,7 @@ export default async function ProjectPage({ params, searchParams }: PageProps) {
     .map(([label, value]) => ({ label, value }))
     .sort((a, b) => b.value - a.value);
 
-  const referrerItems = filterReferrers(overview.top_referrers, project);
+  const referrerItems = formatReferrers(overview.top_referrers);
 
   const topPageItems = overview.top_pages.map((p) => ({
     label: p.url,
