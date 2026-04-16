@@ -1,7 +1,7 @@
-export type { Period } from '../../../shared/types';
-export { today, daysAgo, periodToRange } from '../../../shared/date';
+export type { Period } from '@shared/types';
+export { today, daysAgo, periodToRange } from '@shared/date';
 
-export function isPeriod(value: string): value is import('../../../shared/types').Period {
+export function isPeriod(value: string): value is import('@shared/types').Period {
   return value === '1d' || value === '7d' || value === '30d';
 }
 
