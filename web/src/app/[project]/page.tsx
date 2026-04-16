@@ -7,6 +7,7 @@ import { DailyChart } from '@/components/DailyChart';
 import { PercentBar } from '@/components/PercentBar';
 import { PeriodTabs } from '@/components/PeriodTabs';
 import { InstallGuide } from '@/components/InstallGuide';
+import type { OverviewResponse, EventsResponse } from '@/lib/api';
 
 interface PageProps {
   params: Promise<{ project: string }>;
@@ -41,8 +42,8 @@ export default async function ProjectPage({ params, searchParams }: PageProps) {
   const period: Period = isPeriod(periodParam ?? '') ? (periodParam as Period) : '7d';
   const { from, to } = periodToRange(period);
 
-  let overview = null;
-  let eventsData = null;
+  let overview: OverviewResponse | null = null;
+  let eventsData: EventsResponse | null = null;
   let fetchError = false;
 
   try {
@@ -50,30 +51,68 @@ export default async function ProjectPage({ params, searchParams }: PageProps) {
       fetchOverview(project, from, to),
       fetchEvents(project, from, to),
     ]);
-  } catch {
+  } catch (err) {
+    console.error(err);
     fetchError = true;
   }
 
-  const hasData = overview && overview.total_views > 0;
+  if (fetchError) {
+    return (
+      <div className="min-h-screen">
+        <header className="border-b border-zinc-200 dark:border-zinc-800 sticky top-0 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-sm z-10">
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 h-14 flex items-center gap-2 min-w-0">
+            <Link href="/" className="text-sm text-zinc-400 dark:text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 flex-shrink-0">
+              jabb
+            </Link>
+            <span className="text-zinc-300 dark:text-zinc-700">/</span>
+            <span className="font-medium truncate">{project}</span>
+          </div>
+        </header>
+        <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
+          <div className="py-16 text-center text-zinc-500 dark:text-zinc-400">
+            데이터를 불러오는 중 오류가 발생했습니다
+          </div>
+        </main>
+      </div>
+    );
+  }
 
-  const deviceItems = overview
-    ? Object.entries(overview.devices)
-        .map(([label, value]) => ({ label, value }))
-        .sort((a, b) => b.value - a.value)
-    : [];
+  if (!overview || overview.total_views === 0) {
+    return (
+      <div className="min-h-screen">
+        <header className="border-b border-zinc-200 dark:border-zinc-800 sticky top-0 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-sm z-10">
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2 min-w-0">
+              <Link href="/" className="text-sm text-zinc-400 dark:text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 flex-shrink-0">
+                jabb
+              </Link>
+              <span className="text-zinc-300 dark:text-zinc-700">/</span>
+              <span className="font-medium truncate">{project}</span>
+            </div>
+            <Suspense fallback={null}>
+              <PeriodTabs current={period} project={project} />
+            </Suspense>
+          </div>
+        </header>
+        <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
+          <InstallGuide project={project} />
+        </main>
+      </div>
+    );
+  }
 
-  const countryItems = overview
-    ? Object.entries(overview.countries)
-        .map(([label, value]) => ({ label, value }))
-        .sort((a, b) => b.value - a.value)
-        .slice(0, 10)
-    : [];
+  const deviceItems = Object.entries(overview.devices)
+    .map(([label, value]) => ({ label, value }))
+    .sort((a, b) => b.value - a.value);
 
-  const browserItems = overview
-    ? Object.entries(overview.browsers)
-        .map(([label, value]) => ({ label, value }))
-        .sort((a, b) => b.value - a.value)
-    : [];
+  const countryItems = Object.entries(overview.countries)
+    .map(([label, value]) => ({ label, value }))
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 10);
+
+  const browserItems = Object.entries(overview.browsers)
+    .map(([label, value]) => ({ label, value }))
+    .sort((a, b) => b.value - a.value);
 
   return (
     <div className="min-h-screen">
@@ -93,82 +132,74 @@ export default async function ProjectPage({ params, searchParams }: PageProps) {
       </header>
 
       <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
-        {fetchError ? (
-          <div className="py-16 text-center text-zinc-500 dark:text-zinc-400">
-            데이터를 불러오는 중 오류가 발생했습니다
+        <div className="space-y-10">
+          <div className="grid grid-cols-2 gap-4">
+            <StatCard label="페이지뷰" value={overview.total_views} />
+            <StatCard label="방문자" value={overview.unique_visitors} />
           </div>
-        ) : !hasData ? (
-          <InstallGuide project={project} />
-        ) : (
-          <div className="space-y-10">
-            <div className="grid grid-cols-2 gap-4">
-              <StatCard label="페이지뷰" value={overview!.total_views} />
-              <StatCard label="방문자" value={overview!.unique_visitors} />
-            </div>
 
-            {overview!.daily.length > 0 && (
+          {overview.daily.length > 0 && (
+            <section>
+              <SectionTitle>일별 추이</SectionTitle>
+              <DailyChart data={overview.daily} from={from} to={to} />
+            </section>
+          )}
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+            {overview.top_pages.length > 0 && (
               <section>
-                <SectionTitle>일별 추이</SectionTitle>
-                <DailyChart data={overview!.daily} from={from} to={to} />
+                <SectionTitle>상위 페이지</SectionTitle>
+                <BarChart
+                  items={overview.top_pages.map((p) => ({ label: p.url, value: p.views }))}
+                />
               </section>
             )}
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-              {overview!.top_pages.length > 0 && (
-                <section>
-                  <SectionTitle>상위 페이지</SectionTitle>
-                  <BarChart
-                    items={overview!.top_pages.map((p) => ({ label: p.url, value: p.views }))}
-                  />
-                </section>
-              )}
-
-              {overview!.top_referrers.length > 0 && (
-                <section>
-                  <SectionTitle>상위 리퍼러</SectionTitle>
-                  <BarChart
-                    items={overview!.top_referrers.map((r) => ({
-                      label: r.referrer || '(direct)',
-                      value: r.views,
-                    }))}
-                  />
-                </section>
-              )}
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-              {deviceItems.length > 0 && (
-                <section>
-                  <SectionTitle>디바이스</SectionTitle>
-                  <PercentBar items={deviceItems} />
-                </section>
-              )}
-
-              {browserItems.length > 0 && (
-                <section>
-                  <SectionTitle>브라우저</SectionTitle>
-                  <PercentBar items={browserItems} />
-                </section>
-              )}
-
-              {countryItems.length > 0 && (
-                <section>
-                  <SectionTitle>국가</SectionTitle>
-                  <PercentBar items={countryItems} />
-                </section>
-              )}
-            </div>
-
-            {eventsData && eventsData.events.length > 0 && (
+            {overview.top_referrers.length > 0 && (
               <section>
-                <SectionTitle>이벤트</SectionTitle>
+                <SectionTitle>상위 리퍼러</SectionTitle>
                 <BarChart
-                  items={eventsData.events.map((e) => ({ label: e.name, value: e.count }))}
+                  items={overview.top_referrers.map((r) => ({
+                    label: r.referrer || '(direct)',
+                    value: r.views,
+                  }))}
                 />
               </section>
             )}
           </div>
-        )}
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+            {deviceItems.length > 0 && (
+              <section>
+                <SectionTitle>디바이스</SectionTitle>
+                <PercentBar items={deviceItems} />
+              </section>
+            )}
+
+            {browserItems.length > 0 && (
+              <section>
+                <SectionTitle>브라우저</SectionTitle>
+                <PercentBar items={browserItems} />
+              </section>
+            )}
+
+            {countryItems.length > 0 && (
+              <section>
+                <SectionTitle>국가</SectionTitle>
+                <PercentBar items={countryItems} />
+              </section>
+            )}
+          </div>
+
+          {eventsData && eventsData.events.length > 0 && (
+            <section>
+              <SectionTitle>이벤트</SectionTitle>
+              <BarChart
+                items={eventsData.events.map((e) => ({ label: e.name, value: e.count }))}
+              />
+            </section>
+          )}
+        </div>
       </main>
     </div>
   );
