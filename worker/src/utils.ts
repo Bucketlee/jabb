@@ -1,3 +1,5 @@
+export { today, daysAgo, isValidDate } from '../../shared/date';
+
 const BOT_PATTERN = /bot|crawler|spider|crawling|headless|phantom|selenium|puppeteer|playwright|slurp|bingbot|googlebot|yandex|baidu|duckduck/i;
 
 export function isBot(ua: string): boolean {
@@ -26,20 +28,6 @@ export async function hashVisitor(ip: string, ua: string, secret: string): Promi
     .map((b) => b.toString(16).padStart(2, '0'))
     .join('');
   return hex;
-}
-
-export function today(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-
-export function daysAgo(n: number): string {
-  const d = new Date();
-  d.setUTCDate(d.getUTCDate() - n);
-  return d.toISOString().slice(0, 10);
-}
-
-export function isValidDate(s: string): boolean {
-  return /^\d{4}-\d{2}-\d{2}$/.test(s) && !isNaN(Date.parse(s));
 }
 
 export function corsHeaders(): Record<string, string> {

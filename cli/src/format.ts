@@ -1,47 +1,47 @@
-import { sparkline } from "./sparkline.js";
-import type { OverviewResponse, EventsResponse } from "./api.js";
+import { sparkline } from './sparkline.js';
+import type { OverviewResponse, EventsResponse, Period } from '../../shared/types';
 
 const BAR_WIDTH = 20;
 
 function fmt(n: number): string {
-  return n.toLocaleString("en-US");
+  return n.toLocaleString('en-US');
 }
 
 function bar(ratio: number): string {
   const filled = Math.round(ratio * BAR_WIDTH);
   const empty = BAR_WIDTH - filled;
-  return "█".repeat(filled) + "░".repeat(empty);
+  return '█'.repeat(filled) + '░'.repeat(empty);
 }
 
-function periodLabel(period: "today" | "week" | "month"): string {
-  const today = new Date().toISOString().slice(0, 10);
-  if (period === "today") return `오늘 (${today})`;
-  if (period === "week") return "최근 7일";
-  return "최근 30일";
+function periodLabel(period: Period): string {
+  const t = new Date().toISOString().slice(0, 10);
+  if (period === '1d') return `오늘 (${t})`;
+  if (period === '7d') return '최근 7일';
+  return '최근 30일';
 }
 
 export function formatOverview(
   project: string,
-  period: "today" | "week" | "month",
+  period: Period,
   data: OverviewResponse
 ): void {
-  const indent = "  ";
+  const indent = '  ';
 
-  console.log("");
+  console.log('');
   console.log(`${indent}jabb · ${project} · ${periodLabel(period)}`);
-  console.log("");
+  console.log('');
   console.log(`${indent}페이지뷰   ${fmt(data.total_views).padStart(8)}`);
   console.log(`${indent}방문자     ${fmt(data.unique_visitors).padStart(8)}`);
 
-  if (period !== "today" && data.daily.length > 0) {
+  if (period !== '1d' && data.daily.length > 0) {
     const values = data.daily.map((d) => d.views);
-    console.log("");
+    console.log('');
     console.log(`${indent}일별 추이`);
     console.log(`${indent}${sparkline(values)}`);
   }
 
   if (data.top_pages.length > 0) {
-    console.log("");
+    console.log('');
     console.log(`${indent}상위 페이지`);
 
     const maxViews = data.top_pages[0]?.views ?? 1;
@@ -59,23 +59,23 @@ export function formatOverview(
     }
   }
 
-  console.log("");
+  console.log('');
 }
 
 export function formatEvents(
   project: string,
-  period: "today" | "week" | "month",
+  period: Period,
   data: EventsResponse
 ): void {
-  const indent = "  ";
+  const indent = '  ';
 
-  console.log("");
+  console.log('');
   console.log(`${indent}jabb · ${project} · ${periodLabel(period)} · 이벤트`);
-  console.log("");
+  console.log('');
 
   if (data.events.length === 0) {
     console.log(`${indent}이벤트 데이터가 없습니다.`);
-    console.log("");
+    console.log('');
     return;
   }
 
@@ -88,19 +88,19 @@ export function formatEvents(
     console.log(`${indent}${name}  ${count}  ${bar(ratio)}`);
   }
 
-  console.log("");
+  console.log('');
 }
 
 export function formatNoData(project: string): void {
-  const indent = "  ";
-  console.log("");
+  const indent = '  ';
+  console.log('');
   console.log(`${indent}jabb · ${project}`);
-  console.log("");
+  console.log('');
   console.log(`${indent}데이터가 없습니다.`);
-  console.log("");
+  console.log('');
   console.log(`${indent}시작하기:`);
   console.log(
     `${indent}<script src="https://jabb.vercel.app/t.js" data-project="${project}"></script>`
   );
-  console.log("");
+  console.log('');
 }

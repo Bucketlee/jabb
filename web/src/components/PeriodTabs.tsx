@@ -4,7 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import type { Period } from '@/lib/date';
 
 const TABS: { value: Period; label: string }[] = [
-  { value: 'today', label: '오늘' },
+  { value: '1d', label: '오늘' },
   { value: '7d', label: '7일' },
   { value: '30d', label: '30일' },
 ];

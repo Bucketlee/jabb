@@ -1,13 +1,14 @@
-import { fetchOverview, fetchEvents } from "./api.js";
+import type { Period } from '../../shared/types';
+import { fetchOverview, fetchEvents } from './api.js';
 import {
   formatOverview,
   formatEvents,
   formatNoData,
-} from "./format.js";
+} from './format.js';
 
 interface Args {
   project: string;
-  period: "today" | "week" | "month";
+  period: Period;
   events: boolean;
   json: boolean;
   api: string;
@@ -16,21 +17,21 @@ interface Args {
 function parseArgs(argv: string[]): Args {
   const args = argv.slice(2);
 
-  if (args.length === 0 || args[0]?.startsWith("--")) {
-    console.error("  사용법: jabb <project> [--week|--month|--events|--json]");
+  if (args.length === 0 || args[0]?.startsWith('--')) {
+    console.error('  사용법: jabb <project> [--week|--month|--events|--json]');
     process.exit(1);
   }
 
   const project = args[0] as string;
   const flags = new Set(args.slice(1));
 
-  let period: "today" | "week" | "month" = "today";
-  if (flags.has("--week")) period = "week";
-  else if (flags.has("--month")) period = "month";
+  let period: Period = '1d';
+  if (flags.has('--week')) period = '7d';
+  else if (flags.has('--month')) period = '30d';
 
-  let api = "https://jabb.vercel.app/api";
+  let api = 'https://jabb.vercel.app/api';
   for (const flag of flags) {
-    if (flag.startsWith("--api=")) {
+    if (flag.startsWith('--api=')) {
       api = flag.slice(6);
     }
   }
@@ -38,8 +39,8 @@ function parseArgs(argv: string[]): Args {
   return {
     project,
     period,
-    events: flags.has("--events"),
-    json: flags.has("--json"),
+    events: flags.has('--events'),
+    json: flags.has('--json'),
     api,
   };
 }
