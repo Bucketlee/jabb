@@ -1,0 +1,23 @@
+{
+  "name": "jabb",
+  "version": "0.1.0",
+  "description": "Zero-config web analytics CLI",
+  "bin": {
+    "jabb": "./dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "tsup": "^8",
+    "typescript": "^5"
+  }
+}

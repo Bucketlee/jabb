@@ -1,0 +1,11 @@
+name = "jabb-worker"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "jabb-db"
+database_id = "e34b1247-e78b-43d4-81d4-a038e4ce587c"
+
+[triggers]
+crons = ["0 2 * * *"]
