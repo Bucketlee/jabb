@@ -54,10 +54,40 @@ export async function handleCollect(request: Request, env: Env): Promise<Respons
   }
   const url = sanitizeUrl(body.u);
 
+  const rawOrigin = request.headers.get('origin');
+  if (!rawOrigin) {
+    return json({ error: 'missing_origin' }, 400);
+  }
+  let originHost: string;
+  try {
+    originHost = new URL(rawOrigin).host;
+  } catch {
+    return json({ error: 'invalid_origin' }, 400);
+  }
+
   const ua = request.headers.get('user-agent') ?? '';
   if (isBot(ua)) return json({ ok: true });
 
   const day = today();
+  const now = Date.now();
+
+  // first-write-wins: origin 없으면 클레임, 있으면 소유자 확인
+  const [claimResult, ownerResult] = await env.DB.batch([
+    env.DB.prepare(
+      `INSERT INTO projects (project, owner_origin, created_at) VALUES (?, ?, ?)
+       ON CONFLICT (project) DO NOTHING`
+    ).bind(project, originHost, now),
+    env.DB.prepare(
+      `SELECT owner_origin FROM projects WHERE project = ?`
+    ).bind(project),
+  ]);
+
+  void claimResult;
+
+  const ownerRow = ownerResult.results[0] as { owner_origin: string } | undefined;
+  if (ownerRow && ownerRow.owner_origin !== originHost) {
+    return json({ error: 'forbidden' }, 403);
+  }
 
   const rateLimitResult = await env.DB.prepare(
     `INSERT INTO daily_counts (project, day, count) VALUES (?, ?, 1)

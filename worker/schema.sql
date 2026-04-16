@@ -23,3 +23,13 @@ CREATE TABLE IF NOT EXISTS daily_counts (
   count   INTEGER NOT NULL DEFAULT 0,
   PRIMARY KEY (project, day)
 );
+
+-- 프로젝트 소유권: 첫 번째 POST의 Origin이 owner가 됨 (first-write-wins)
+CREATE TABLE IF NOT EXISTS projects (
+  project      TEXT PRIMARY KEY,
+  owner_origin TEXT NOT NULL,
+  created_at   INTEGER NOT NULL
+);
+
+-- events 테이블의 day 컬럼 단독 인덱스 (날짜 범위 집계 쿼리 최적화)
+CREATE INDEX IF NOT EXISTS idx_events_day ON events (day);
