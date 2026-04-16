@@ -2,9 +2,32 @@ import { Env, CollectBody } from './types';
 import { isBot, parseDevice, parseBrowser, hashVisitor, today, json } from './utils';
 
 const PROJECT_ID_RE = /^[a-z0-9-]{3,30}$/;
+const EVENT_NAME_RE = /^[\w.\-:]{1,64}$/;
 const DAILY_LIMIT = 10_000;
 const MAX_PAYLOAD_BYTES = 2048;
 const MAX_META_BYTES = 500;
+const MAX_URL_LEN = 500;
+const MAX_REFERRER_LEN = 200;
+
+function sanitizeUrl(raw: string): string {
+  return raw.replace(/[\x00-\x1f\x7f]/g, '').slice(0, MAX_URL_LEN);
+}
+
+function sanitizeReferrer(raw: string | undefined | null): string | null {
+  if (!raw) return null;
+  try {
+    const u = new URL(raw);
+    const normalized = `${u.protocol}//${u.host}${u.pathname}`;
+    return normalized.slice(0, MAX_REFERRER_LEN);
+  } catch {
+    return null;
+  }
+}
+
+function sanitizeEventName(raw: string | undefined | null): string | null {
+  if (!raw || !EVENT_NAME_RE.test(raw)) return null;
+  return raw;
+}
 
 export async function handleCollect(request: Request, env: Env): Promise<Response> {
   const contentLength = request.headers.get('content-length');
@@ -26,10 +49,10 @@ export async function handleCollect(request: Request, env: Env): Promise<Respons
     return json({ error: 'invalid_project' }, 400);
   }
 
-  const url = body.u;
-  if (!url || typeof url !== 'string') {
+  if (!body.u || typeof body.u !== 'string') {
     return json({ error: 'invalid' }, 400);
   }
+  const url = sanitizeUrl(body.u);
 
   const ua = request.headers.get('user-agent') ?? '';
   if (isBot(ua)) return json({ ok: true });
@@ -57,8 +80,8 @@ export async function handleCollect(request: Request, env: Env): Promise<Respons
   const visitor = await hashVisitor(ip, ua, env.SERVER_SECRET);
 
   const type = body.t === 'event' ? 'event' : 'pageview';
-  const name = type === 'event' ? (body.n ?? null) : null;
-  const referrer = body.r ?? null;
+  const name = type === 'event' ? sanitizeEventName(body.n) : null;
+  const referrer = sanitizeReferrer(body.r);
 
   let meta: string | null = null;
   if (body.m) {
