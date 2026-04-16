@@ -38,13 +38,13 @@ export async function handleCollect(request: Request, env: Env): Promise<Respons
 
   const rateLimitResult = await env.DB.prepare(
     `INSERT INTO daily_counts (project, day, count) VALUES (?, ?, 1)
-     ON CONFLICT (project, day) DO UPDATE SET count = count + 1 WHERE count < ?
+     ON CONFLICT (project, day) DO UPDATE SET count = count + 1
      RETURNING count`
   )
-    .bind(project, day, DAILY_LIMIT)
+    .bind(project, day)
     .first<{ count: number }>();
 
-  if (!rateLimitResult) {
+  if (!rateLimitResult || rateLimitResult.count > DAILY_LIMIT) {
     return json({ error: 'rate_limit' }, 429);
   }
 
