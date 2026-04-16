@@ -16,7 +16,7 @@ export async function GET(
     return NextResponse.json({ error: 'misconfigured' }, { status: 500 });
   }
 
-  const upstreamUrl = `${WORKER_URL}/query/${project}/overview?from=${from}&to=${to}`;
+  const upstreamUrl = `${WORKER_URL}/v1/query/${project}/overview?from=${from}&to=${to}`;
   const res = await fetch(upstreamUrl, {
     headers: { Authorization: `Bearer ${WORKER_SECRET}` },
     next: { revalidate: 60 },

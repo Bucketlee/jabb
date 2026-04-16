@@ -21,7 +21,7 @@ function parseDateRange(url: URL): { from: string; to: string } | null {
 
 export async function handleQuery(request: Request, env: Env): Promise<Response> {
   const url = new URL(request.url);
-  const pathParts = url.pathname.replace(/^\/query\//, '').split('/');
+  const pathParts = url.pathname.replace(/^\/v1\/query\//, '').split('/');
   const project = pathParts[0];
   const endpoint = pathParts[1];
 

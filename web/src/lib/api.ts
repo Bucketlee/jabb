@@ -1,17 +1,6 @@
-export interface OverviewData {
-  total_views: number;
-  unique_visitors: number;
-  top_pages: { url: string; views: number }[];
-  top_referrers: { referrer: string; views: number }[];
-  daily: { day: string; views: number }[];
-  devices: Record<string, number>;
-  countries: Record<string, number>;
-  browsers: Record<string, number>;
-}
+import type { OverviewResponse, EventsResponse } from '../../../shared/types';
 
-export interface EventsData {
-  events: { name: string; count: number }[];
-}
+export type { OverviewResponse, EventsResponse };
 
 function workerUrl(): string {
   const url = process.env.WORKER_URL;
@@ -29,26 +18,26 @@ export async function fetchOverview(
   project: string,
   from: string,
   to: string,
-): Promise<OverviewData> {
-  const url = `${workerUrl()}/query/${project}/overview?from=${from}&to=${to}`;
+): Promise<OverviewResponse> {
+  const url = `${workerUrl()}/v1/query/${project}/overview?from=${from}&to=${to}`;
   const res = await fetch(url, {
     headers: { Authorization: `Bearer ${workerSecret()}` },
     next: { revalidate: 60 },
   });
   if (!res.ok) throw new Error(`overview fetch failed: ${res.status}`);
-  return res.json() as Promise<OverviewData>;
+  return res.json() as Promise<OverviewResponse>;
 }
 
 export async function fetchEvents(
   project: string,
   from: string,
   to: string,
-): Promise<EventsData> {
-  const url = `${workerUrl()}/query/${project}/events?from=${from}&to=${to}`;
+): Promise<EventsResponse> {
+  const url = `${workerUrl()}/v1/query/${project}/events?from=${from}&to=${to}`;
   const res = await fetch(url, {
     headers: { Authorization: `Bearer ${workerSecret()}` },
     next: { revalidate: 60 },
   });
   if (!res.ok) throw new Error(`events fetch failed: ${res.status}`);
-  return res.json() as Promise<EventsData>;
+  return res.json() as Promise<EventsResponse>;
 }

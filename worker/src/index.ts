@@ -13,11 +13,11 @@ export default {
       return new Response(null, { status: 204, headers: corsHeaders() });
     }
 
-    if (method === 'POST' && pathname === '/collect') {
+    if (method === 'POST' && pathname === '/v1/collect') {
       return handleCollect(request, env);
     }
 
-    if (method === 'GET' && pathname.startsWith('/query/')) {
+    if (method === 'GET' && pathname.startsWith('/v1/query/')) {
       const authHeader = request.headers.get('Authorization');
       if (!authHeader || authHeader !== `Bearer ${env.WORKER_SECRET}`) {
         return json({ error: 'unauthorized' }, 401);
