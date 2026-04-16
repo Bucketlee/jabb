@@ -25,15 +25,15 @@ export function PeriodTabs({ current, project }: PeriodTabsProps) {
   }
 
   return (
-    <div className="flex gap-1 bg-zinc-100 dark:bg-zinc-900 p-1 rounded-lg">
+    <div className="flex gap-0.5 bg-zinc-100 dark:bg-zinc-900 p-0.5 rounded-md">
       {TABS.map((tab) => (
         <button
           key={tab.value}
           onClick={() => handleChange(tab.value)}
-          className={`px-3 py-1 text-sm rounded-md transition-colors ${
+          className={`px-3 py-1 text-xs rounded transition-colors ${
             current === tab.value
-              ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-sm font-medium'
-              : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300'
+              ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 font-medium shadow-sm'
+              : 'text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300'
           }`}
         >
           {tab.label}

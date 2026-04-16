@@ -3,5 +3,6 @@
 @layer base {
   :root {
     color-scheme: light dark;
+    --font-mono: ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, monospace;
   }
 }
