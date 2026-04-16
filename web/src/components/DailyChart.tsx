@@ -17,7 +17,7 @@ function fillDays(data: DailyItem[], from: string, to: string): DailyItem[] {
   while (cursor <= end) {
     const day = cursor.toISOString().slice(0, 10);
     result.push({ day, views: map.get(day) ?? 0 });
-    cursor.setDate(cursor.getDate() + 1);
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
   }
   return result;
 }
