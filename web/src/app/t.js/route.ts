@@ -18,8 +18,8 @@ function buildScript(workerUrl: string): string {
       if(name)payload.n=name;
       if(meta)payload.m=meta;
       var body=JSON.stringify(payload);
-      if(navigator.sendBeacon){navigator.sendBeacon(endpoint,new Blob([body],{type:'application/json'}));return;}
-      fetch(endpoint,{method:'POST',body:body,headers:{'Content-Type':'application/json'},keepalive:true}).catch(function(){});
+      if(navigator.sendBeacon&&navigator.sendBeacon(endpoint,new Blob([body],{type:'text/plain'})))return;
+      fetch(endpoint,{method:'POST',body:body,headers:{'Content-Type':'text/plain'},keepalive:true}).catch(function(){});
     }catch(e){}
   }
   send('pageview');
