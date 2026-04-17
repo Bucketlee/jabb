@@ -33,3 +33,11 @@ CREATE TABLE IF NOT EXISTS projects (
 
 -- events 테이블의 day 컬럼 단독 인덱스 (날짜 범위 집계 쿼리 최적화)
 CREATE INDEX IF NOT EXISTS idx_events_day ON events (day);
+
+-- IP 단위 분당 rate limit (스팸/리소스 소진 방어)
+CREATE TABLE IF NOT EXISTS ip_limits (
+  ip     TEXT NOT NULL,
+  minute TEXT NOT NULL,
+  count  INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (ip, minute)
+);

@@ -2,6 +2,11 @@ name = "jabb-worker"
 main = "src/index.ts"
 compatibility_date = "2024-01-01"
 
+[vars]
+# 조회 API (/v1/query/*) CORS 허용 origin. 서버 간 호출은 CORS 무관하게 동작하므로
+# 브라우저에서 직접 조회를 허용할 도메인만 지정. 미설정 시 브라우저 조회 차단.
+ALLOWED_ORIGIN = "https://jabb.vercel.app"
+
 [[d1_databases]]
 binding = "DB"
 database_name = "jabb-db"

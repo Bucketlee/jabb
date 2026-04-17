@@ -4,4 +4,5 @@ export interface Env {
   DB: D1Database;
   SERVER_SECRET: string;
   WORKER_SECRET: string;
+  ALLOWED_ORIGIN?: string;
 }

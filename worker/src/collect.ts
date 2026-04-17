@@ -4,6 +4,7 @@ import { isBot, parseDevice, parseBrowser, hashVisitor, today, json } from './ut
 const PROJECT_ID_RE = /^[a-z0-9-]{3,30}$/;
 const EVENT_NAME_RE = /^[\w.\-:]{1,64}$/;
 const DAILY_LIMIT = 10_000;
+const IP_MINUTE_LIMIT = 60;
 const MAX_PAYLOAD_BYTES = 2048;
 const MAX_META_BYTES = 500;
 const MAX_URL_LEN = 500;
@@ -72,6 +73,24 @@ export async function handleCollect(request: Request, env: Env): Promise<Respons
   const day = today();
   const now = Date.now();
 
+  const forwardedFor = request.headers.get('x-forwarded-for');
+  const firstForwarded = forwardedFor ? forwardedFor.split(',')[0].trim() : '';
+  const ip = request.headers.get('cf-connecting-ip') ?? firstForwarded ?? '';
+
+  // IP 단위 분당 rate limit — 분산 스팸/리소스 소진 방어
+  const minute = new Date(now).toISOString().slice(0, 16);
+  const ipLimitResult = await env.DB.prepare(
+    `INSERT INTO ip_limits (ip, minute, count) VALUES (?, ?, 1)
+     ON CONFLICT (ip, minute) DO UPDATE SET count = count + 1
+     RETURNING count`
+  )
+    .bind(ip || 'unknown', minute)
+    .first<{ count: number }>();
+
+  if (!ipLimitResult || ipLimitResult.count > IP_MINUTE_LIMIT) {
+    return json({ error: 'rate_limit' }, 429);
+  }
+
   // first-write-wins: origin 없으면 클레임, 있으면 소유자 확인
   const [claimResult, ownerResult] = await env.DB.batch([
     env.DB.prepare(
@@ -102,13 +121,10 @@ export async function handleCollect(request: Request, env: Env): Promise<Respons
     return json({ error: 'rate_limit' }, 429);
   }
 
-  const forwardedFor = request.headers.get('x-forwarded-for');
-  const firstForwarded = forwardedFor ? forwardedFor.split(',')[0].trim() : '';
-  const ip = request.headers.get('cf-connecting-ip') ?? firstForwarded;
   const country = request.headers.get('cf-ipcountry') ?? null;
   const device = parseDevice(ua);
   const browser = parseBrowser(ua);
-  const visitor = await hashVisitor(ip, ua, env.SERVER_SECRET);
+  const visitor = await hashVisitor(ip, ua, project, env.SERVER_SECRET);
 
   const type = body.t === 'event' ? 'event' : 'pageview';
   const name = type === 'event' ? sanitizeEventName(body.n) : null;

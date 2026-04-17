@@ -2,7 +2,7 @@ import { Env } from './types';
 import { handleCollect } from './collect';
 import { handleQuery } from './query';
 import { handleCron } from './cron';
-import { json, corsHeaders } from './utils';
+import { json, collectCors, queryCors } from './utils';
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -10,7 +10,10 @@ export default {
     const { method, pathname } = { method: request.method, pathname: url.pathname };
 
     if (method === 'OPTIONS') {
-      return new Response(null, { status: 204, headers: corsHeaders() });
+      const cors = pathname.startsWith('/v1/query/')
+        ? queryCors(env.ALLOWED_ORIGIN ?? '')
+        : collectCors();
+      return new Response(null, { status: 204, headers: cors });
     }
 
     if (method === 'POST' && pathname === '/v1/collect') {
@@ -20,7 +23,7 @@ export default {
     if (method === 'GET' && pathname.startsWith('/v1/query/')) {
       const authHeader = request.headers.get('Authorization');
       if (!authHeader || authHeader !== `Bearer ${env.WORKER_SECRET}`) {
-        return json({ error: 'unauthorized' }, 401);
+        return json({ error: 'unauthorized' }, 401, queryCors(env.ALLOWED_ORIGIN ?? ''));
       }
       return handleQuery(request, env);
     }

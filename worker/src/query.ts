@@ -1,5 +1,5 @@
 import { Env } from './types';
-import { json, isValidDate, daysAgo, today } from './utils';
+import { json, isValidDate, daysAgo, today, queryCors } from './utils';
 
 const MAX_RANGE_DAYS = 90;
 
@@ -20,29 +20,36 @@ function parseDateRange(url: URL): { from: string; to: string } | null {
 }
 
 export async function handleQuery(request: Request, env: Env): Promise<Response> {
+  const cors = queryCors(env.ALLOWED_ORIGIN ?? '');
   const url = new URL(request.url);
   const pathParts = url.pathname.replace(/^\/v1\/query\//, '').split('/');
   const project = pathParts[0];
   const endpoint = pathParts[1];
 
-  if (!project || !endpoint) return json({ error: 'not_found' }, 404);
+  if (!project || !endpoint) return json({ error: 'not_found' }, 404, cors);
 
   const range = parseDateRange(url);
-  if (!range) return json({ error: 'invalid_range' }, 400);
+  if (!range) return json({ error: 'invalid_range' }, 400, cors);
 
   const { from, to } = range;
 
   if (endpoint === 'overview') {
-    return handleOverview(env.DB, project, from, to);
+    return handleOverview(env.DB, project, from, to, cors);
   }
   if (endpoint === 'events') {
-    return handleEvents(env.DB, project, from, to);
+    return handleEvents(env.DB, project, from, to, cors);
   }
 
-  return json({ error: 'not_found' }, 404);
+  return json({ error: 'not_found' }, 404, cors);
 }
 
-async function handleOverview(db: D1Database, project: string, from: string, to: string): Promise<Response> {
+async function handleOverview(
+  db: D1Database,
+  project: string,
+  from: string,
+  to: string,
+  cors: Record<string, string>,
+): Promise<Response> {
   const [totalRow, uniqueRow, topPages, topReferrers, daily, devicesRows, countriesRows, browsersRows] = await Promise.all([
     db
       .prepare(`SELECT COUNT(*) as total FROM events WHERE project = ? AND type = 'pageview' AND day >= ? AND day <= ?`)
@@ -114,19 +121,29 @@ async function handleOverview(db: D1Database, project: string, from: string, to:
     browsers[row.browser] = row.count;
   }
 
-  return json({
-    total_views: totalRow?.total ?? 0,
-    unique_visitors: uniqueRow?.unique_visitors ?? 0,
-    top_pages: topPages.results,
-    top_referrers: topReferrers.results,
-    daily: daily.results,
-    devices,
-    countries,
-    browsers,
-  });
+  return json(
+    {
+      total_views: totalRow?.total ?? 0,
+      unique_visitors: uniqueRow?.unique_visitors ?? 0,
+      top_pages: topPages.results,
+      top_referrers: topReferrers.results,
+      daily: daily.results,
+      devices,
+      countries,
+      browsers,
+    },
+    200,
+    cors,
+  );
 }
 
-async function handleEvents(db: D1Database, project: string, from: string, to: string): Promise<Response> {
+async function handleEvents(
+  db: D1Database,
+  project: string,
+  from: string,
+  to: string,
+  cors: Record<string, string>,
+): Promise<Response> {
   const result = await db
     .prepare(
       `SELECT name, COUNT(*) as count FROM events WHERE project = ? AND type = 'event' AND name IS NOT NULL AND day >= ? AND day <= ? GROUP BY name ORDER BY count DESC`
@@ -134,5 +151,5 @@ async function handleEvents(db: D1Database, project: string, from: string, to: s
     .bind(project, from, to)
     .all<{ name: string; count: number }>();
 
-  return json({ events: result.results });
+  return json({ events: result.results }, 200, cors);
 }
